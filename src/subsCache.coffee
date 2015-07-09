@@ -126,8 +126,11 @@ class @SubsCache
             @when = Date.now() 
             # if the computation stops, then delayedStop
             c = Tracker.currentComputation
-            c?.onInvalidate => 
-              @delayedStop()
+            c?.onInvalidate =>
+              try
+                @delayedStop()
+              catch err
+                console.info 'Warning! SubsCache ignoring exception:', err.message
           stop: -> @delayedStop()
           delayedStop: ->
             if expireTime >= 0
