@@ -123,21 +123,20 @@ class @SubsCache
             onStop: makeDelegatingCallbackFn @, 'onStop'
           start: ->
             # so we know what to throw out when the cache overflows
-            @when = Date.now() 
+            @when = Date.now()
             # if the computation stops, then delayedStop
             c = Tracker.currentComputation
             c?.onInvalidate =>
-              try
-                @delayedStop()
-              catch err
-                console.info 'Warning! SubsCache ignoring exception:', err.message
+              @delayedStop()
+            #  catch err
+            #    console.info 'Warning! SubsCache ignoring exception:', err.message
           stop: -> @delayedStop()
           delayedStop: ->
             if expireTime >= 0
-              @timerId = Meteor.setTimeout(@stopNow.bind(this), expireTime*1000*60)
+              @timerId = setTimeout(@stopNow.bind(this), expireTime*1000*60)
           restart: ->
             # if we'are restarting, then stop the timer
-            Meteor.clearTimeout(@timerId)
+            clearTimeout(@timerId)
             @start()
           stopNow: ->
             @sub.stop()
