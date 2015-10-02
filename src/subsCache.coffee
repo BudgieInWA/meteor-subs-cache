@@ -2,6 +2,7 @@
 debug = (args...) -> return
 
 makeDelegatingCallbackFn = (cachedSub, callbackName)->
+  # console.log("SC makeDelegatingCallbackFn", this, arguments);
   ->
     originalThis = @
     originalArgs = arguments
@@ -10,6 +11,7 @@ makeDelegatingCallbackFn = (cachedSub, callbackName)->
         cbs[callbackName].apply originalThis, originalArgs
 
 hasCallbacks = (args)->
+  # console.log("SC hasCallbacks", this, arguments);
   # this logic is copied from Meteor.subscribe found in
   # https://github.com/meteor/meteor/blob/master/packages/ddp/livedata_connection.js
   if args.length
@@ -22,12 +24,14 @@ hasCallbacks = (args)->
       ], _.isFunction))
 
 withoutCallbacks = (args)->
+  # console.log("SC withoutCallbacks", this, arguments);
   if hasCallbacks args
     args[..-1]
   else
     args[..]
 
 callbacksFromArgs = (args)->
+  # console.log("SC callbacksFromArgs", this, arguments);
   if hasCallbacks args
     if _.isFunction args[args.length-1]
       onReady: args[args.length-1]
@@ -38,13 +42,14 @@ callbacksFromArgs = (args)->
 
 class @SubsCache
   @caches: []
-  
+
   constructor: (obj) ->
+    console.log("SC constructor", this, arguments);
     expireAfter = undefined
     cacheLimit = undefined
     if obj
       {expireAfter, cacheLimit} = obj
-      
+
     # defaults
     if expireAfter is undefined
       expireAfter = 5
@@ -63,25 +68,31 @@ class @SubsCache
     SubsCache.caches.push(@)
 
   ready: ->
+    console.log("SC ready", this, arguments);
     @allReady.get()
 
   onReady: (callback) ->
+    console.log("SC OnReady", this, arguments);
     Tracker.autorun (c) =>
       if @ready()
         c.stop()
         callback()
 
   @clearAll: ->
+    console.log("SC clearAll", this, arguments);
     @caches.map (s) -> s.clear()
 
   clear: ->
+    console.log("SC clear", this, arguments);
     _.values(@cache).map((sub)-> sub.stopNow())
 
   subscribe: (args...) ->
+    console.log("SC subscribe", this, arguments);
     args.unshift(@expireAfter)
     @subscribeFor.apply(this, args)
 
   subscribeFor: (expireTime, args...) ->
+    console.log("SC subscribeFor", this, arguments);
     if Meteor.isServer
       # If we're using fast-render for SSR
       Meteor.subscribe.apply(Meteor.args)
@@ -104,9 +115,11 @@ class @SubsCache
           when: null
           callbacks: []
           ready: ->
+            console.log("SC 2 ready", this, arguments);
             @sub.ready()
           onReady: (callback)->
-            if @ready() 
+            console.log("SC 2 onReady", this, arguments);
+            if @ready()
               Tracker.nonreactive -> callback()
             else
               Tracker.autorun (c) =>
@@ -114,14 +127,17 @@ class @SubsCache
                   c.stop()
                   Tracker.nonreactive -> callback()
           registerCallbacks: (callbacks)->
+            # console.log("SC 2 registerCallbacks", this, arguments);
             if _.isFunction callbacks.onReady
               @onReady callbacks.onReady
             @callbacks.push callbacks
           getDelegatingCallbacks: ->
+            # console.log("SC 2 getDelegatingCallbacks", this, arguments);
             # make functions that delegate to all register callbacks
             onError: makeDelegatingCallbackFn @, 'onError'
             onStop: makeDelegatingCallbackFn @, 'onStop'
           start: ->
+            console.log("SC 2 start", this, arguments);
             # so we know what to throw out when the cache overflows
             @when = Date.now()
             # if the computation stops, then delayedStop
@@ -130,15 +146,20 @@ class @SubsCache
               @delayedStop()
             #  catch err
             #    console.info 'Warning! SubsCache ignoring exception:', err.message
-          stop: -> @delayedStop()
+          stop: ->
+            console.log("SC 2 stop", this, arguments);
+            @delayedStop()
           delayedStop: ->
+            console.log("SC 2 delayedStop", this, arguments);
             if expireTime >= 0
               @timerId = setTimeout(@stopNow.bind(this), expireTime*1000*60)
           restart: ->
+            console.log("SC 2 restart", this, arguments);
             # if we'are restarting, then stop the timer
             clearTimeout(@timerId)
             @start()
           stopNow: ->
+            console.log("SC 2 stopNow", this, arguments);
             @sub.stop()
             delete cache[@hash]
 
@@ -167,7 +188,7 @@ class @SubsCache
         cachedSub.start()
 
         # reactively set the allReady reactive variable
-        @allReadyComp?.stop() 
+        @allReadyComp?.stop()
         Tracker.autorun (c) =>
           @allReadyComp = c
           subs = _.values(@cache)
