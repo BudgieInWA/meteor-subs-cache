@@ -133,12 +133,14 @@ class @SubsCache
           stop: -> @delayedStop()
           delayedStop: ->
             if expireTime >= 0
+              console.info("Beginning delayed stop:", this)
               @timerId = setTimeout(@stopNow.bind(this), expireTime*1000*60)
           restart: ->
             # if we'are restarting, then stop the timer
             clearTimeout(@timerId)
             @start()
           stopNow: ->
+            console.info("Stopping:", this)
             @sub.stop()
             delete cache[@hash]
 
@@ -146,7 +148,10 @@ class @SubsCache
         newArgs = withoutCallbacks args
         newArgs.push cachedSub.getDelegatingCallbacks()
         # make sure the subscription won't be stopped if we are in a reactive computation
-        cachedSub.sub = Tracker.nonreactive -> Meteor.subscribe.apply(Meteor, newArgs)
+        cachedSub.sub = Tracker.nonreactive ->
+          console.info("Subscribing:", newArgs)
+          Meteor.subscribe.apply(Meteor, newArgs)
+
 
         if hasCallbacks args
           cachedSub.registerCallbacks callbacksFromArgs args
