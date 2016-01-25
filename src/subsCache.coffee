@@ -103,6 +103,7 @@ class @SubsCache
           expireTime: expireTime
           when: null
           callbacks: []
+          count: 0
           ready: ->
             @sub.ready()
           onReady: (callback)->
@@ -130,7 +131,11 @@ class @SubsCache
               @delayedStop()
             #  catch err
             #    console.info 'Warning! SubsCache ignoring exception:', err.message
-          stop: -> @delayedStop()
+          stop: ->
+            if @count <= 0
+              @delayedStop()
+            else
+              @count--
           delayedStop: ->
             if expireTime >= 0
               console.info("Beginning delayed stop:", this)
@@ -138,6 +143,7 @@ class @SubsCache
           restart: ->
             # if we'are restarting, then stop the timer
             clearTimeout(@timerId)
+            @count++
             @start()
           stopNow: ->
             console.info("Stopping:", this)
