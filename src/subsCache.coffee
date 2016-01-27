@@ -103,7 +103,7 @@ class @SubsCache
           expireTime: expireTime
           when: null
           callbacks: []
-          timesCalled: 1
+          copies: 1
           ready: ->
             @sub.ready()
           onReady: (callback)->
@@ -132,17 +132,16 @@ class @SubsCache
             #  catch err
             #    console.info 'Warning! SubsCache ignoring exception:', err.message
           stop: ->
-            if @timesCalled <= 1
+            @copies--
+            if @copies == 0
               @delayedStop()
-            else
-              @timesCalled--
           delayedStop: ->
             if expireTime >= 0
               @timerId = setTimeout(@stopNow.bind(this), expireTime*1000*60)
           restart: ->
             # if we'are restarting, then stop the timer
             clearTimeout(@timerId)
-            @timesCalled++
+            @copies++
             @start()
           stopNow: ->
             @sub.stop()
