@@ -96,6 +96,7 @@ class @SubsCache
           expireTime: expireTime
           when: null
           hooks: []
+          copies: 0
           ready: ->
             @sub.ready()
           onReady: (callback)->
@@ -126,13 +127,17 @@ class @SubsCache
           start: ->
             # so we know what to throw out when the cache overflows
             @when = Date.now()
-            # if the computation stops, then delayedStop
+            @copies++
+            # to mirror the normal subscribe behaviour (and because we hide the real
+            # subscribe call from Tracker) we need to stop the sub when the current
+            # computation stops
             c = Tracker.currentComputation
-            c?.onInvalidate =>
+            c?.onInvalidate => 
+              @stop()
+          stop: ->
+            @copies--
+            if @copies == 0
               @delayedStop()
-            #  catch err
-            #    console.info 'Warning! SubsCache ignoring exception:', err.message
-          stop: -> @delayedStop()
           delayedStop: ->
             if expireTime >= 0
               @timerId = setTimeout(@stopNow.bind(this), expireTime*1000*60)
